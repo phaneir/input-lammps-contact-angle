@@ -1,0 +1,54 @@
+units real
+atom_style full
+boundary p p f
+bond_style harmonic
+angle_style harmonic
+dihedral_style harmonic
+pair_style lj/cut/coul/long 10
+kspace_style pppm 1e-5
+kspace_modify slab 3
+special_bonds lj 0.0 0.0 0.5 coul 0.0 0.0 1.0 angle yes
+
+region box block 0 50 0 50 -100 200
+create_box 9 box &
+bond/types 7 &
+angle/types 8 &
+dihedral/types 4 &
+extra/bond/per/atom 3 &
+extra/angle/per/atom 6 &
+extra/dihedral/per/atom 10 &
+extra/special/per/atom 14
+
+include ./PARM.lammps
+
+region box2 block 0 50 0 50 2.0 52
+
+molecule h2omol H2O-SPCFw.mol
+create_atoms 0 random 4167 87910 box2 mol &
+    h2omol 454756 overlap 1.0 maxtry 500
+
+group H2O type 8 9
+dump dumpmin all atom 100 traje_min.lammpstrj
+
+minimize 1.0e-4 1.0e-6 1000 1000
+
+undump dumpmin
+reset_timestep 0
+
+fix wallz all wall/lj126 zlo -1.0 1.2 1.0 10.0 
+
+
+fix md_nve all nve
+fix md_nvt all langevin 300.0 300.0 100.0 645734
+
+dump mydmp all xyz 10000 traje.xyz
+dump mydmp2 all dcd 1000 traje.dcd
+
+thermo 1000
+
+restart 100000 water.restart
+
+timestep 1.0
+run 200000000
+
+write_data H2O.data
